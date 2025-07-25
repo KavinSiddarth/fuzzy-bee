@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fuzzy Bee - Intelligent Plant Monitoring Dashboard</title>
+    <link rel="icon" href="https://via.placeholder.com/32x32/FFD700/2e7d32?text=FB" type="image/png"> 
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* General Styling */
+        body {
+            font-family: 'Roboto', sans-serif; /* Modern sans-serif font */
+            margin: 0;
+            padding: 0;
+            background-color: #f0f2f5; /* Light grey background */
+            color: #333;
+            line-height: 1.6;
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+
+        h1, h2, h3, h4 {
+            color: #2e7d32; /* Dark green, agriculture theme */
+            margin-bottom: 15px;
+        }
+
+        /* Layout - Sidebar and Main Content */
+        .dashboard-container {
+            display: flex;
+            flex: 1;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: #388e3c; /* Medium green */
+            color: white;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .sidebar .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .sidebar .logo h2 {
+            margin: 0;
+            color: white;
+            font-size: 1.8em;
+            /* Added for Fuzzy Bee: */
+            font-family: 'Georgia', serif; /* A slightly softer font for "Fuzzy Bee" */
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .sidebar .logo p {
+            margin: 5px 0 0 0;
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .sidebar nav ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar nav ul li {
+            margin-bottom: 10px;
+        }
+
+        .sidebar nav ul li a {
+            color: white;
+            text-decoration: none;
+            display: block;
+            padding: 10px 15px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .sidebar nav ul li a:hover,
+        .sidebar nav ul li a.active {
+            background-color: #2e7d32; /* Darker green on hover/active */
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 30px;
+            background-color: #f9f9f9; /* Slightly off-white for main area */
+        }
+
+        /* Dashboard Cards */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            border-left: 5px solid #4caf50; /* Green accent */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card h3 {
+            margin-top: 0;
+            color: #4caf50; /* Bright green for card titles */
+        }
+
+        .card .value {
+            font-size: 2.2em;
+            font-weight: bold;
+            color: #2e7d32;
+            margin-bottom: 10px;
+        }
+
+        .card .description {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        /* Alert Specific Styling */
+        .alert-card {
+            border-left: 5px solid #ffc107; /* Amber for alerts */
+        }
+        .alert-card h3 {
+            color: #ffc107;
+        }
+        .alert-card.critical {
+            border-left-color: #f44336; /* Red for critical alerts */
+        }
+        .alert-card.critical h3 {
+             color: #f44336;
+        }
+        .alert-list {
+            list-style: none;
+            padding: 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .alert-list li {
+            background-color: #fff9e6;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            border: 1px solid #ffe0b2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .alert-list li.critical-alert {
+            background-color: #ffebee;
+            border-color: #ef9a9a;
+            color: #d32f2f;
+            font-weight: bold;
+        }
+        .alert-list li .timestamp {
+            font-size: 0.8em;
+            color: #999;
+        }
+
+        /* Chart Styling */
+        .chart-container {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+
+        /* Control Panel */
+        .control-panel {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        .control-panel .control-group {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        .control-panel .control-group:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .control-panel label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        .control-panel select,
+        .control-panel input[type="range"],
+        .control-panel button {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            font-size: 1em;
+            margin-top: 5px;
+        }
+        .control-panel button {
+            background-color: #4caf50;
+            color: white;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.3s ease;
+        }
+        .control-panel button:hover {
+            background-color: #388e3c;
+        }
+
+        /* Footer */
+        .footer {
+            background-color: #263238; /* Dark grey for footer */
+            color: white;
+            text-align: center;
+            padding: 20px 0;
+            font-size: 0.9em;
+            margin-top: auto; /* Pushes footer to bottom */
+        }
+        .footer a {
+            color: #81c784;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .dashboard-container {
+                flex-direction: column;
+            }
+            .sidebar {
+                width: 100%;
+                height: auto;
+                padding-bottom: 10px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            }
+            .sidebar nav ul {
+                flex-direction: row;
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            .sidebar nav ul li {
+                margin: 5px 10px;
+            }
+            .main-content {
+                padding: 20px;
+            }
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .main-content {
+                padding: 15px;
+            }
+        }
+        .logo-img{
+            width: 50%;
+            height:50%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <img src="image-removebg-preview (1).png" class="logo-img">
+                <h2>Fuzzy Bee</h2>
+                <p>Intelligent Plant Monitoring</p>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="#overview" class="active">Dashboard Overview</a></li>
+                    <li><a href="#sensors">Sensor Data</a></li>
+                    <li><a href="#growth">Growth & Yield</a></li>
+                    <li><a href="#alerts">Alerts & Notifications</a></li>
+                    <li><a href="#automation">IoT Control</a></li>
+                    <li><a href="#reports">Reports</a></li>
+                </ul>
+            </nav>
+            <div class="sidebar-footer" style="text-align: center; font-size: 0.8em; margin-top: 20px;">
+                <p>Logged in as: Farmer John</p>
+                <p>&copy; 2025 Fuzzy Bee</p>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <section id="overview">
+                <h1>Precision Farming Dashboard</h1>
+                <div class="card-grid">
+                    <div class="card">
+                        <h3>Current pH</h3>
+                        <div class="value">6.3</div>
+                        <div class="description">Rhizosphere pH in Zone A, optimal for tomatoes.</div>
+                    </div>
+                    <div class="card">
+                        <h3>Light Intensity (PAR)</h3>
+                        <div class="value">850 &mu;mol/m&sup2;/s</div>
+                        <div class="description">Avg. Photosynthetically Active Radiation.</div>
+                    </div>
+                    <div class="card">
+                        <h3>Soil Moisture</h3>
+                        <div class="value">68%</div>
+                        <div class="description">Current volumetric water content.</div>
+                    </div>
+                    <div class="card">
+                        <h3>Predicted Yield Gain</h3>
+                        <div class="value">23%</div>
+                        <div class="description">Target increase for current wheat crop.</div>
+                    </div>
+                    <div class="card alert-card">
+                        <h3>Active Alerts</h3>
+                        <div class="value" id="activeAlertCount">2</div>
+                        <div class="description">Immediate attention required for nutrient imbalance.</div>
+                    </div>
+                    <div class="card">
+                        <h3>Temperature</h3>
+                        <div class="value">28.5 &deg;C</div>
+                        <div class="description">Average air temperature in main greenhouse.</div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="sensors" class="chart-container">
+                <h2>Real-time Sensor Data</h2>
+                <div style="width: 90%; margin: auto;">
+                    <h3>Rhizosphere Nutrient Profile (ISE - Dummy Data)</h3>
+                    <canvas id="nutrientChart"></canvas>
+                </div>
+                <div style="width: 90%; margin: auto; margin-top: 30px;">
+                    <h3>Photosynthetic Efficiency (Hyperspectral - Dummy Data)</h3>
+                    <canvas id="photosynthesisChart"></canvas>
+                </div>
+                 <div style="width: 90%; margin: auto; margin-top: 30px;">
+                    <h3>3D LiDAR Growth Tracking (Dummy Data - Height)</h3>
+                    <canvas id="growthChart"></canvas>
+                </div>
+            </section>
+
+            <section id="alerts" class="section alert-card">
+                <h2>Stress Alerts & Notifications</h2>
+                <ul class="alert-list">
+                    <li class="critical-alert">
+                        <span>High EC detected in Tomato Zone 3. Possible nutrient burn.</span>
+                        <span class="timestamp">Just now</span>
+                    </li>
+                    <li>
+                        <span>PAR levels below optimal range in Wheat Field 1. Consider supplemental lighting.</span>
+                        <span class="timestamp">10 minutes ago</span>
+                    </li>
+                    <li>
+                        <span>Irrigation scheduled for 03:00 AM in Corn Field 2.</span>
+                        <span class="timestamp">1 hour ago</span>
+                    </li>
+                    <li>
+                        <span>pH fluctuation in Hydroponic Lettuce Tank B. Monitor closely.</span>
+                        <span class="timestamp">4 hours ago</span>
+                    </li>
+                </ul>
+                <p style="text-align: right;"><a href="#">View All Alerts</a></p>
+            </section>
+
+            <section id="automation" class="control-panel">
+                <h2>IoT Automation Layer Control</h2>
+                <div class="control-group">
+                    <h3>Smart Irrigation</h3>
+                    <label for="irrigationZone">Select Zone:</label>
+                    <select id="irrigationZone">
+                        <option value="zoneA">Tomato Zone A</option>
+                        <option value="zoneB">Wheat Field B</option>
+                        <option value="zoneC">Corn Field C</option>
+                    </select>
+                    <label for="irrigationMode">Mode:</label>
+                    <select id="irrigationMode">
+                        <option value="auto">Auto (AI Optimized)</option>
+                        <option value="manual">Manual</option>
+                        <option value="off">Off</option>
+                    </select>
+                    <label for="irrigationDuration">Manual Duration (min):</label>
+                    <input type="range" id="irrigationDuration" min="0" max="120" value="30">
+                    <span id="irrigationDurationValue">30 min</span>
+                    <button onclick="applyIrrigation()">Apply Irrigation Settings</button>
+                </div>
+
+                <div class="control-group">
+                    <h3>LED Spectrally Tuned Lighting</h3>
+                    <label for="lightZone">Select Zone:</label>
+                    <select id="lightZone">
+                        <option value="gh1">Greenhouse 1</option>
+                        <option value="gh2">Greenhouse 2</option>
+                    </select>
+                    <label for="lightSpectrum">Spectrum Profile:</label>
+                    <select id="lightSpectrum">
+                        <option value="growth">Vegetative Growth</option>
+                        <option value="flowering">Flowering/Fruiting</option>
+                        <option value="custom">Custom (AI Recommend)</option>
+                    </select>
+                     <label for="lightIntensity">Intensity:</label>
+                    <input type="range" id="lightIntensity" min="0" max="100" value="75">
+                    <span id="lightIntensityValue">75%</span>
+                    <button onclick="applyLighting()">Apply Lighting Settings</button>
+                </div>
+
+                <div class="control-group">
+                    <h3>Targeted Nutrient Dosing</h3>
+                    <label for="nutrientTank">Select Tank:</label>
+                    <select id="nutrientTank">
+                        <option value="tank1">Tank A (N-P-K)</option>
+                        <option value="tank2">Tank B (Micros)</option>
+                    </select>
+                    <label for="nutrientDose">Dose (ml/L):</label>
+                    <input type="number" id="nutrientDose" min="0" step="0.1" value="5.0">
+                    <button onclick="applyNutrientDose()">Initiate Dosing</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <footer class="footer">
+        <p>Fuzzy Bee - Intelligent Plant Monitoring System &copy; 2025 | Powered by AI & Multi-Modal Sensing</p>
+        <p><a href="#">Privacy Policy</a> | <a href="#">Terms of Service</a></p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Fuzzy Bee Intelligent Plant Monitoring Dashboard Loaded.'); // Updated log message
+
+            // --- Chart.js Initializations (Dummy Data) ---
+
+            // Rhizosphere Nutrient Profile (ISE) Chart
+            const nutrientCtx = document.getElementById('nutrientChart').getContext('2d');
+            new Chart(nutrientCtx, {
+                type: 'line',
+                data: {
+                    labels: ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00'],
+                    datasets: [
+                        {
+                            label: 'Nitrate (ppm)',
+                            data: [120, 115, 130, 125, 118, 122],
+                            borderColor: '#3498db',
+                            tension: 0.3,
+                            fill: false
+                        },
+                        {
+                            label: 'Potassium (ppm)',
+                            data: [80, 85, 78, 82, 79, 81],
+                            borderColor: '#e74c3c',
+                            tension: 0.3,
+                            fill: false
+                        },
+                         {
+                            label: 'EC (mS/cm)',
+                            data: [2.1, 2.0, 2.2, 2.15, 2.05, 2.1],
+                            borderColor: '#f1c40f',
+                            tension: 0.3,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Last 6 Hours: Nitrate, Potassium, EC'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+
+            // Photosynthetic Efficiency Chart
+            const photosynthesisCtx = document.getElementById('photosynthesisChart').getContext('2d');
+            new Chart(photosynthesisCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Leaf A', 'Leaf B', 'Leaf C', 'Leaf D', 'Leaf E'],
+                    datasets: [{
+                        label: 'NDVI Index',
+                        data: [0.75, 0.82, 0.79, 0.73, 0.80],
+                        backgroundColor: [
+                            'rgba(76, 175, 80, 0.7)', // Green
+                            'rgba(76, 175, 80, 0.7)',
+                            'rgba(76, 175, 80, 0.7)',
+                            'rgba(255, 193, 7, 0.7)', // Yellow for slightly lower
+                            'rgba(76, 175, 80, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(76, 175, 80, 1)',
+                            'rgba(76, 175, 80, 1)',
+                            'rgba(76, 175, 80, 1)',
+                            'rgba(255, 193, 7, 1)',
+                            'rgba(76, 175, 80, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Photosynthetic Efficiency (NDVI) by Sampled Leaf'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1.0,
+                            title: {
+                                display: true,
+                                text: 'NDVI Value'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 3D LiDAR Growth Tracking (Height) Chart
+            const growthCtx = document.getElementById('growthChart').getContext('2d');
+            new Chart(growthCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Day 1', 'Day 7', 'Day 14', 'Day 21', 'Day 28'],
+                    datasets: [
+                        {
+                            label: 'Average Plant Height (cm)',
+                            data: [10, 15, 23, 35, 48],
+                            borderColor: '#8e44ad', // Purple for growth
+                            backgroundColor: 'rgba(142, 68, 173, 0.2)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Predicted Height (cm)',
+                            data: [10, 16, 25, 38, 52], // Slightly higher prediction
+                            borderColor: '#34495e',
+                            borderDash: [5, 5],
+                            tension: 0.4,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Plant Growth Tracking (Wheat - Height Over Time)'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Height (cm)'
+                            }
+                        }
+                    }
+                }
+            });
+
+
+            // --- IoT Automation Control Logic (Dummy Functions) ---
+
+            const irrigationDurationRange = document.getElementById('irrigationDuration');
+            const irrigationDurationValueSpan = document.getElementById('irrigationDurationValue');
+            irrigationDurationRange.addEventListener('input', () => {
+                irrigationDurationValueSpan.textContent = `${irrigationDurationRange.value} min`;
+            });
+
+            const lightIntensityRange = document.getElementById('lightIntensity');
+            const lightIntensityValueSpan = document.getElementById('lightIntensityValue');
+            lightIntensityRange.addEventListener('input', () => {
+                lightIntensityValueSpan.textContent = `${lightIntensityRange.value}%`;
+            });
+
+
+            window.applyIrrigation = function() {
+                const zone = document.getElementById('irrigationZone').value;
+                const mode = document.getElementById('irrigationMode').value;
+                const duration = document.getElementById('irrigationDuration').value;
+                alert(`Applying irrigation: Zone: ${zone}, Mode: ${mode}, Duration: ${duration} mins.`);
+                // In a real system, this would send an API call to the IoT backend
+            };
+
+            window.applyLighting = function() {
+                const zone = document.getElementById('lightZone').value;
+                const spectrum = document.getElementById('lightSpectrum').value;
+                const intensity = document.getElementById('lightIntensity').value;
+                alert(`Applying lighting: Zone: ${zone}, Spectrum: ${spectrum}, Intensity: ${intensity}%.`);
+                // In a real system, this would send an API call to the IoT backend
+            };
+
+            window.applyNutrientDose = function() {
+                const tank = document.getElementById('nutrientTank').value;
+                const dose = document.getElementById('nutrientDose').value;
+                alert(`Initiating nutrient dosing: Tank: ${tank}, Dose: ${dose} ml/L.`);
+                // In a real system, this would send an API call to the IoT backend
+            };
+
+            // --- Sidebar Active Link Management ---
+            const navLinks = document.querySelectorAll('.sidebar nav ul li a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                    // For a single page app, you'd scroll to section or load content
+                    // For this static example, we'll just scroll
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetElement = document.getElementById(targetId);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({ behavior: 'smooth' });
+                    }
+                    e.preventDefault(); // Prevent default hash link behavior
+                });
+            });
+
+             // --- Simulate Alert Count Update (Basic JS) ---
+             let currentAlerts = 2; // From initial HTML
+             setInterval(() => {
+                 // Simulate new alerts occasionally
+                 if (Math.random() < 0.2) { // 20% chance to add a new alert
+                     currentAlerts++;
+                     document.getElementById('activeAlertCount').textContent = currentAlerts;
+                     const alertList = document.querySelector('.alert-list');
+                     const newAlert = document.createElement('li');
+                     newAlert.innerHTML = `<span>New simulated alert! Check sensor data.</span><span class="timestamp">${new Date().toLocaleTimeString()}</span>`;
+                     alertList.prepend(newAlert); // Add to top
+                 }
+             }, 10000); // Check every 10 seconds
+        });
+    </script>
+
+
+</body>
+</html>
